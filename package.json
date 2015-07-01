@@ -1,0 +1,25 @@
+{
+  "name": "openconf",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mikeal Rogers <mikeal.rogers@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "body": "^5.1.0",
+    "eachy": "^1.0.4",
+    "generic-session": "^0.1.0",
+    "http-hash-router": "^1.1.0",
+    "intl-tel-input": "^6.0.3",
+    "level": "^1.2.0",
+    "level-sec": "^1.3.0",
+    "level-session": "^0.3.3",
+    "level-sublevel": "^6.4.6",
+    "request": "^2.58.0",
+    "response": "^0.14.0",
+    "routil-session": "^0.1.1"
+  }
+}

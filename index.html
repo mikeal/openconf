@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script type="text/javascript"
+    src="//static.twilio.com/libs/twiliojs/1.2/twilio.min.js"></script>
+    <script type="text/javascript"
+    src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.3/handlebars.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" type="text/css" href="/intl-tel-input/css/intlTelInput.css">
+    <link rel="stylesheet" type="text/css" href="/static/auth-buttons.css">
+    <style>
+    .btn-auth {
+      visibility: hidden;
+    }
+    </style>
+  </head>
+
+  <body>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+    $.ajax('/list')
+    .success(function (obj) {
+      console.log('list', obj.error)
+      if (obj.error) {
+        $('.btn-auth').css('visibility', 'visible')
+      } else {
+        var source   = $("#create-meeting").html()
+        var template = Handlebars.compile(source)
+        $('div#main').append(template(obj))
+      }
+    })
+    </script>
+
+    <div id="main">
+      <a class="btn-auth btn-github large" href="/login">
+        Sign in with <b>GitHub</b>
+      </a>
+    </div>
+
+
+    <script id="create-meeting" type="text/x-handlebars-template">
+      <form>
+         <select name="cars">
+          {{#each orgs}}
+          <option value="{{this}}">{{this}}</option>
+          {{/each}}
+        </select>
+        <button>Create Meeting</button>
+      </form>
+    </script>
+
+    <!-- <input type="tel" id="mobile-number"> -->
+    <script src="/intl-tel-input/js/intlTelInput.min.js"></script>
+    <script>
+    $('#mobile-number').intlTelInput({
+        responsiveDropdown: true,
+        autoFormat: true,
+        utilsScript: '/intl-tel-input/js/utils.js'
+    });
+    // $('#phoneNumber').val()
+    //
+    // $('#contactForm').on('submit', function(e) {
+    //     // Prevent submit event from bubbling and automatically submitting the
+    //     // form
+    //     e.preventDefault();
+    //
+    //     // Call our ajax endpoint on the server to initialize the phone call
+    //     $.ajax({
+    //         url: '/call',
+    //         method: 'POST',
+    //         dataType: 'json',
+    //         data: {
+    //             phoneNumber: $('#phoneNumber').val()
+    //         }
+    //     }).done(function(data) {
+    //         // The JSON sent back from the server will contain a success message
+    //         alert(data.message);
+    //     }).fail(function(error) {
+    //         alert(JSON.stringify(error));
+    //     });
+    // });
+    </script>
+  </body>
+</html>
