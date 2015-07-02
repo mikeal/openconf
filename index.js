@@ -155,6 +155,7 @@ router.set('/list', function (req, res) {
         }
         var orgs = body.map(function (obj) {return obj.login})
         var count = 0
+
         orgs.forEach(function (org) {
           var confs = []
           indexes.byorg.get(org, function (err, _confs) {

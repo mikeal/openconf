@@ -3,12 +3,29 @@
     <meta charset="utf-8">
     <script type="text/javascript"
     src="//static.twilio.com/libs/twiliojs/1.2/twilio.min.js"></script>
-    <script type="text/javascript"
-    src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.3/handlebars.min.js"></script>
     <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
     <link rel="stylesheet" type="text/css" href="/intl-tel-input/css/intlTelInput.css">
     <link rel="stylesheet" type="text/css" href="/static/auth-buttons.css">
+
+    <!-- DEPS -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.3/handlebars.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked.min.js"></script>
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+
+    <!-- DATE PICKER -->
+    <script src='//cdnjs.cloudflare.com/ajax/libs/pickadate.js/3.5.6/compressed/picker.js'></script>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/pickadate.js/3.5.6/compressed/picker.date.js'></script>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/pickadate.js/3.5.6/compressed/picker.time.js'></script>
+    <link rel="stylesheet"
+    href="//cdnjs.cloudflare.com/ajax/libs/pickadate.js/3.5.6/compressed/themes/default.css" id="theme_base">
+    <link rel="stylesheet"
+    href="//cdnjs.cloudflare.com/ajax/libs/pickadate.js/3.5.6/compressed/themes/default.date.css" id="theme_date">
+    <link rel="stylesheet"
+    href="//cdnjs.cloudflare.com/ajax/libs/pickadate.js/3.5.6/compressed/themes/default.time.css" id="theme_time">
+
     <style>
     .btn-auth {
       visibility: hidden;
@@ -18,38 +35,108 @@
 
   <body>
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+      <!-- TEMPLATES -->
+
+      <script id="logged-in" type="text/x-handlebars-template">
+        <div class="row" id="top-row">
+          <div class="eleven columns">
+            <h3>My Confs</h3>
+            {{#each confs}}
+            <div id="confs">{{title}}</div>
+            {{/each}}
+          </div>
+          <div class="one column">
+            <button class="button-primary">New Conf</button>
+          </div>
+        </div>
+      </script>
+
+      <script id="conf-form" type="text/x-handlebars-template">
+        <form id="form-conf-form">
+          <div class="row">
+            <div class="six columns">
+              <label>Title</label>
+              <input for="title" class="u-full-width" type="text">
+            </div>
+            <div class="two columns">
+              <label>Day</label>
+              <input for="day" class="u-full-width" id="dt-date" type="text">
+            </div>
+            <div class="two columns">
+              <label>Time</label>
+              <input for="time" class="u-full-width" id="dt-time" type="text">
+            </div>
+            <div class="two columns">
+              <label>Org</label>
+               <select class="u-full-width" name="cars">
+                {{#each orgs}}
+                <option value="{{this}}">{{this}}</option>
+                {{/each}}
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <label for="exampleMessage">Description</label>
+            <textarea class="u-full-width" placeholder="Hi, I support markdown :)" for="description" id="description"></textarea>
+            <button type="button" id="cancel">Cancel</button>
+            <button id="submit" type="button" class="button-primary">Submit</button>
+          </div>
+        </form>
+      </script>
+
     <script>
     $.ajax('/list')
     .success(function (obj) {
-      console.log('list', obj.error)
+      console.log('list', obj)
       if (obj.error) {
         $('.btn-auth').css('visibility', 'visible')
       } else {
-        var source   = $("#create-meeting").html()
-        var template = Handlebars.compile(source)
-        $('div#main').append(template(obj))
+        function renderLoggedIn () {
+          var source   = $("#logged-in").html()
+            , template = Handlebars.compile(source)
+            , html = template(obj)
+            , elem = $(html)
+            ;
+          elem.find('button').click(renderForm)
+          $('#main').html(elem)
+        }
+
+        function renderForm () {
+          $(this).remove()
+          var source   = $("#conf-form").html()
+            , template = Handlebars.compile(source)
+            , html = template(obj)
+            , elem = $(html)
+            ;
+          elem.find('#dt-date').pickadate()
+          elem.find('#dt-time').pickatime()
+          elem.find('#submit').click(function () {
+            var obj = {}
+            console.log('submit')
+          })
+          elem.find('button#cancel').click(removeForm)
+          $('#main').prepend(elem)
+        }
+
+        function removeForm () {
+          $('#form-conf-form').remove()
+          $('#top-row').append(
+            '<div class="one column">' +
+              '<button class="button-primary">New Conf</button>' +
+            '</div>'
+          ).click(renderForm)
+        }
       }
+
+      renderLoggedIn()
     })
     </script>
 
-    <div id="main">
+    <div id="main" class="container">
       <a class="btn-auth btn-github large" href="/login">
         Sign in with <b>GitHub</b>
       </a>
     </div>
-
-
-    <script id="create-meeting" type="text/x-handlebars-template">
-      <form>
-         <select name="cars">
-          {{#each orgs}}
-          <option value="{{this}}">{{this}}</option>
-          {{/each}}
-        </select>
-        <button>Create Meeting</button>
-      </form>
-    </script>
 
     <!-- <input type="tel" id="mobile-number"> -->
     <script src="/intl-tel-input/js/intlTelInput.min.js"></script>
