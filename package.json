@@ -11,6 +11,7 @@
   "dependencies": {
     "body": "^5.1.0",
     "eachy": "^1.0.4",
+    "flatten": "0.0.1",
     "generic-session": "^0.1.0",
     "http-hash-router": "^1.1.0",
     "intl-tel-input": "^6.0.3",
@@ -18,8 +19,10 @@
     "level-sec": "^1.3.0",
     "level-session": "^0.3.3",
     "level-sublevel": "^6.4.6",
+    "phone": "^1.0.4",
     "request": "^2.58.0",
     "response": "^0.14.0",
-    "routil-session": "^0.1.1"
+    "routil-session": "^0.1.1",
+    "twilio": "^2.2.1"
   }
 }

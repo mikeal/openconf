@@ -3,15 +3,14 @@
     <meta charset="utf-8">
     <script type="text/javascript"
     src="//static.twilio.com/libs/twiliojs/1.2/twilio.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" type="text/css" href="/intl-tel-input/css/intlTelInput.css">
     <link rel="stylesheet" type="text/css" href="/static/auth-buttons.css">
+    <script src="/static/strftime.js"></script>
 
     <!-- DEPS -->
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.3/handlebars.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jstimezonedetect/1.0.4/jstz.min.js"></script>
     <link rel="stylesheet" type="text/css"
           href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
 
@@ -34,71 +33,160 @@
   </head>
 
   <body>
+    <!-- TEMPLATES -->
+    <script id="logged-in" type="text/x-handlebars-template">
+      <div class="row" id="top-form">
+        <div class="ten columns">
+          <input type="tel" id="mobile-number" value="{{phone}}"></input>
+          <button id="set-number" type="button" class="button-primary">Set Contact Number</button>
+        </div>
+        <div class="two columns">
+          <button type="button" id="new-conf" class="button-primary">New Conf</button>
+        </div>
+      </div>
 
-      <!-- TEMPLATES -->
+      <div class="row">
 
-      <script id="logged-in" type="text/x-handlebars-template">
-        <div class="row" id="top-row">
-          <div class="eleven columns">
-            <h3>My Confs</h3>
-            {{#each confs}}
-            <div id="confs">{{title}}</div>
-            {{/each}}
+        <div class="twelve columns">
+          <h3>My Confs</h3>
+          {{#each confs}}
+          <div class="row conf-cell">
+            <div id="conf-title" class="eight columns">{{title}}</div>
+            <div id="conf-time" class="four columns">{{time}}</div>
+            <div id="conf-description" class="twelve columns">{{{desc}}}</div>
+            {{#if notrsvp}}
+            <div class="two columns">
+              <button type="button" class="button-primary rsvp-button" confid="{{id}}">RSVP</button>
+            </div>
+            {{else}}
+            <div class="two columns">
+              You've RSVP'd
+            </div>
+            {{/if}}
           </div>
-          <div class="one column">
-            <button class="button-primary">New Conf</button>
+          {{/each}}
+        </div>
+
+      </div>
+
+    </script>
+
+    <script id="conf-form" type="text/x-handlebars-template">
+      <form id="form-conf-form">
+        <div class="row">
+          <div class="six columns">
+            <label>Title</label>
+            <input for="title" class="u-full-width" id="conf-title" type="text">
+          </div>
+          <div class="two columns">
+            <label>Day</label>
+            <input for="day" class="u-full-width" id="dt-date" type="text">
+          </div>
+          <div class="two columns">
+            <label>Time</label>
+            <input for="time" class="u-full-width" id="dt-time" type="text">
+            <p>{{tz}}</p>
+          </div>
+          <div class="two columns">
+            <label>Org</label>
+             <select class="u-full-width" name="orgs" id="conf-org">
+              {{#each orgs}}
+              <option value="{{this}}">{{this}}</option>
+              {{/each}}
+            </select>
           </div>
         </div>
-      </script>
-
-      <script id="conf-form" type="text/x-handlebars-template">
-        <form id="form-conf-form">
-          <div class="row">
-            <div class="six columns">
-              <label>Title</label>
-              <input for="title" class="u-full-width" type="text">
-            </div>
-            <div class="two columns">
-              <label>Day</label>
-              <input for="day" class="u-full-width" id="dt-date" type="text">
-            </div>
-            <div class="two columns">
-              <label>Time</label>
-              <input for="time" class="u-full-width" id="dt-time" type="text">
-            </div>
-            <div class="two columns">
-              <label>Org</label>
-               <select class="u-full-width" name="cars">
-                {{#each orgs}}
-                <option value="{{this}}">{{this}}</option>
-                {{/each}}
-              </select>
-            </div>
-          </div>
-          <div class="row">
-            <label for="exampleMessage">Description</label>
-            <textarea class="u-full-width" placeholder="Hi, I support markdown :)" for="description" id="description"></textarea>
-            <button type="button" id="cancel">Cancel</button>
-            <button id="submit" type="button" class="button-primary">Submit</button>
-          </div>
-        </form>
-      </script>
+        <div class="row">
+          <label for="exampleMessage">Description</label>
+          <textarea class="u-full-width" placeholder="Hi, I support markdown :)" for="description" id="description"></textarea>
+          <button type="button" id="cancel">Cancel</button>
+          <button id="submit" type="button" class="button-primary">Submit</button>
+        </div>
+      </form>
+    </script>
 
     <script>
     $.ajax('/list')
     .success(function (obj) {
-      console.log('list', obj)
+      console.log('/list', obj)
       if (obj.error) {
         $('.btn-auth').css('visibility', 'visible')
       } else {
+        obj.tz = jstz.determine().name()
+
+        obj.confs.forEach(function (conf) {
+          conf.desc = marked(conf.description)
+          conf.time = strftime('%B %e, %R', new Date(conf.dt))
+          conf.notrsvp = true
+          if (conf.rsvp) {
+            conf.rsvp.forEach(function (user) {
+              if (user.login === obj.user.login) conf.notrsvp = false
+            })
+          }
+        })
+
+        function setNumber () {
+          var number = $('#mobile-number').val()
+
+          function onCreate (obj) {
+            if (obj.error) {
+              return alert('Phone number is not in a valid format.')
+            } else {
+              location.reload()
+            }
+            console.log('created')
+          }
+
+          $.ajax(
+            { type: "PUT"
+            , url: "/set-contact"
+            , data: JSON.stringify(number)
+            , contentType: "application/json; charset=utf-8"
+            , dataType: "json"
+            , success: onCreate
+            , failure: function(errMsg) { alert(errMsg) }
+            }
+          )
+        }
+
         function renderLoggedIn () {
           var source   = $("#logged-in").html()
             , template = Handlebars.compile(source)
             , html = template(obj)
             , elem = $(html)
             ;
-          elem.find('button').click(renderForm)
+          elem.find('button#new-conf').click(renderForm)
+          elem.find('button#set-number').click(setNumber)
+
           $('#main').html(elem)
+
+          $('.rsvp-button').click(function () {
+            var self = $(this)
+            var id = self.attr('confid')
+
+            function onCreate () {
+              self.remove()
+              console.log('rsvp yes')
+            }
+
+            $.ajax(
+              { type: "PUT"
+              , url: "/rsvp"
+              , data: JSON.stringify({id:id})
+              , contentType: "application/json; charset=utf-8"
+              , dataType: "json"
+              , success: onCreate
+              , failure: function(errMsg) { alert(errMsg) }
+              }
+            )
+          })
+
+          // $('#mobile-number').intlTelInput({
+          //     utilsScript:
+          // })
+          // var isValid = $("#mobile-number").intlTelInput("isValidNumber");
+          // // $("#mobile-number").intlTelInput("selectCountry", "gb");
+          // $("#mobile-number").intlTelInput("autoFormat", true);
         }
 
         function renderForm () {
@@ -111,24 +199,48 @@
           elem.find('#dt-date').pickadate()
           elem.find('#dt-time').pickatime()
           elem.find('#submit').click(function () {
-            var obj = {}
-            console.log('submit')
+            var obj =
+              { title: $('input#conf-title').val()
+              , description: $('textarea#description').val()
+              , startdate: $('input#dt-date').val()
+              , starttime: $('input#dt-time').val()
+              , org: $('select#conf-org').val()
+              }
+            var fails = []
+            for (var x in obj) {
+              if (!obj[x]) fails.push(x)
+            }
+            if (fails.length) return alert('Must include '+fails.join(', '))
+
+            obj.dt = new Date(obj.startdate + ' ' + obj.starttime)
+            console.log(obj)
+            function onCreate (obj) {
+              removeForm()
+              console.log(obj)
+              location.reload()
+            }
+
+            $.ajax(
+              { type: "PUT"
+              , url: "/create"
+              , data: JSON.stringify(obj)
+              , contentType: "application/json; charset=utf-8"
+              , dataType: "json"
+              , success: onCreate
+              , failure: function(errMsg) { alert(errMsg) }
+              }
+            )
           })
           elem.find('button#cancel').click(removeForm)
-          $('#main').prepend(elem)
+          $('#top-form').html(elem)
         }
 
         function removeForm () {
-          $('#form-conf-form').remove()
-          $('#top-row').append(
-            '<div class="one column">' +
-              '<button class="button-primary">New Conf</button>' +
-            '</div>'
-          ).click(renderForm)
+          renderLoggedIn()
         }
-      }
 
-      renderLoggedIn()
+        renderLoggedIn()
+      }
     })
     </script>
 
@@ -138,36 +250,6 @@
       </a>
     </div>
 
-    <!-- <input type="tel" id="mobile-number"> -->
-    <script src="/intl-tel-input/js/intlTelInput.min.js"></script>
-    <script>
-    $('#mobile-number').intlTelInput({
-        responsiveDropdown: true,
-        autoFormat: true,
-        utilsScript: '/intl-tel-input/js/utils.js'
-    });
-    // $('#phoneNumber').val()
-    //
-    // $('#contactForm').on('submit', function(e) {
-    //     // Prevent submit event from bubbling and automatically submitting the
-    //     // form
-    //     e.preventDefault();
-    //
-    //     // Call our ajax endpoint on the server to initialize the phone call
-    //     $.ajax({
-    //         url: '/call',
-    //         method: 'POST',
-    //         dataType: 'json',
-    //         data: {
-    //             phoneNumber: $('#phoneNumber').val()
-    //         }
-    //     }).done(function(data) {
-    //         // The JSON sent back from the server will contain a success message
-    //         alert(data.message);
-    //     }).fail(function(error) {
-    //         alert(JSON.stringify(error));
-    //     });
-    // });
     </script>
   </body>
 </html>
