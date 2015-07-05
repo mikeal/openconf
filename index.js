@@ -96,7 +96,8 @@ function callConference (id) {
     function (err, contacts) {
       if (err) return console.error('unresolvable error w/', id)
       contacts = contacts.filter(function (c) {return c})
-      contacts.push('+14159925092')
+      // mikeal's skype number for testing
+      // contacts.push('+14159925092')
       contacts.forEach(function (contact) {
         console.log('calling', contact)
         var url = 'http://conf.tenconf.com/conf/'+doc.id
